@@ -1,8 +1,8 @@
 {
   "name": "@electron-webauthn/pkg",
   "version": "0.0.0",
-  "main": "index.js",
-  "types": "index.d.ts",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
   "napi": {
     "name": "pkg",
     "triples": {
@@ -36,7 +36,9 @@
   },
   "scripts": {
     "artifacts": "napi artifacts",
-    "build": "napi build --platform --release",
+    "build": "yarn run build:rust && yarn run build:ts",
+    "build:ts": "tsc",
+    "build:rust": "napi build --platform --release",
     "build:debug": "napi build --platform",
     "prepublishOnly": "napi prepublish -t npm",
     "test": "ava",
