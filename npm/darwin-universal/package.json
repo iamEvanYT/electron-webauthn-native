@@ -1,0 +1,15 @@
+{
+  "name": "@electron-webauthn/pkg-darwin-universal",
+  "version": "0.0.0",
+  "os": [
+    "darwin"
+  ],
+  "main": "pkg.darwin-universal.node",
+  "files": [
+    "pkg.darwin-universal.node"
+  ],
+  "license": "MIT",
+  "engines": {
+    "node": ">= 10"
+  }
+}
