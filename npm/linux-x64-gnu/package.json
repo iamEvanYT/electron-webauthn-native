@@ -1,6 +1,6 @@
 {
-  "name": "@electron-webauthn/pkg-linux-x64-gnu",
-  "version": "0.0.0",
+  "name": "@electron-webauthn/native-linux-x64-gnu",
+  "version": "0.0.5",
   "os": [
     "linux"
   ],
@@ -11,12 +11,12 @@
   "files": [
     "electron-webauthn.linux-x64-gnu.node"
   ],
-  "description": "Add support for WebAuthn in Electron.",
+  "description": "Add support for WebAuthn for Electron.",
   "license": "MIT",
   "engines": {
     "node": ">= 10"
   },
-  "repository": "https://github.com/iamEvanYT/electron-webauthn.git",
+  "repository": "https://github.com/iamEvanYT/electron-webauthn-native",
   "libc": [
     "glibc"
   ]

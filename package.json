@@ -1,33 +1,26 @@
 {
-  "name": "@electron-webauthn/pkg",
-  "version": "0.0.0",
-  "main": "dist/index.js",
-  "types": "dist/index.d.ts",
+  "name": "@electron-webauthn/native",
+  "version": "0.0.1",
+  "main": "index.js",
+  "types": "index.d.ts",
   "napi": {
     "name": "electron-webauthn",
     "triples": {
       "additional": [
         "aarch64-apple-darwin",
-        "aarch64-linux-android",
-        "aarch64-unknown-linux-gnu",
-        "aarch64-unknown-linux-musl",
-        "aarch64-pc-windows-msvc",
-        "armv7-unknown-linux-gnueabihf",
-        "armv7-unknown-linux-musleabihf",
-        "x86_64-unknown-linux-musl",
-        "x86_64-unknown-freebsd",
-        "i686-pc-windows-msvc",
-        "armv7-linux-androideabi",
-        "universal-apple-darwin",
-        "riscv64gc-unknown-linux-gnu"
+        "aarch64-pc-windows-msvc"
       ]
     }
   },
   "license": "MIT",
+  "files": [
+    "dist",
+    "index.d.ts",
+    "index.js"
+  ],
   "devDependencies": {
     "@napi-rs/cli": "^2.18.4",
-    "ava": "^6.0.1",
-    "typescript": "^5.8.3"
+    "ava": "^6.0.1"
   },
   "ava": {
     "timeout": "3m"
@@ -37,9 +30,7 @@
   },
   "scripts": {
     "artifacts": "napi artifacts",
-    "build": "yarn run build:ts && yarn run build:rust",
-    "build:ts": "tsc",
-    "build:rust": "napi build --platform --release",
+    "build": "napi build --platform --release",
     "build:debug": "napi build --platform",
     "prepublishOnly": "napi prepublish -t npm",
     "test": "ava",
@@ -47,6 +38,6 @@
     "version": "napi version"
   },
   "packageManager": "yarn@4.9.2",
-  "repository": "https://github.com/iamEvanYT/electron-webauthn.git",
-  "description": "Add support for WebAuthn in Electron."
+  "repository": "https://github.com/iamEvanYT/electron-webauthn-native",
+  "description": "Add support for WebAuthn for Electron."
 }

@@ -27,8 +27,12 @@ jobs:
         settings:
           - host: macos-latest
             target: x86_64-apple-darwin
+          - host: macos-latest
+            target: aarch64-apple-darwin
           - host: windows-latest
             target: x86_64-pc-windows-msvc
+          - host: windows-latest
+            target: aarch64-pc-windows-msvc
           - host: ubuntu-latest
             target: x86_64-unknown-linux-gnu
     name: Build - ${{ matrix.settings.target }}
@@ -84,8 +88,6 @@ jobs:
           path: artifacts
       - name: Move artifacts
         run: yarn artifacts
-      - name: Build package
-        run: yarn build:ts
       - name: Publish
         run: |
           npm config set provenance true
@@ -99,6 +101,40 @@ jobs:
             npm publish --tag next --access public
           else
             echo "Not a release, skipping publish"
+          fi
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          NPM_TOKEN: ${{ secrets.NPM_TOKEN }}
+      - name: Rename and publish under APP_NAME
+        run: |
+          npm config set provenance false
+          if git log -1 --pretty=%B | grep "^[0-9]\+\.[0-9]\+\.[0-9]\+";
+          then
+            # Backup original package.json and npm directory
+            cp package.json package.json.backup
+            mv npm npm.backup
+            
+            # Get current package name and update to APP_NAME
+            node -e "
+              const fs = require('fs');
+              const pkg = JSON.parse(fs.readFileSync('package.json', 'utf8'));
+              pkg.name = process.env.APP_NAME;
+              fs.writeFileSync('package.json', JSON.stringify(pkg, null, 2));
+            "
+            
+            # Publish under the new name (main package only, no subpackages)
+            if git log -1 --pretty=%B | grep "^[0-9]\+\.[0-9]\+\.[0-9]\+$";
+            then
+              npm publish --access public
+            else
+              npm publish --tag next --access public
+            fi
+            
+            # Restore original package.json and npm directory
+            mv package.json.backup package.json
+            mv npm.backup npm
+          else
+            echo "Not a release, skipping renamed publish"
           fi
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

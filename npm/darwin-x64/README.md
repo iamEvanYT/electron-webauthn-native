@@ -1,3 +1,3 @@
-# `@electron-webauthn/pkg-darwin-x64`
+# `@electron-webauthn/native-darwin-x64`
 
-This is the **x86_64-apple-darwin** binary for `@electron-webauthn/pkg`
+This is the **x86_64-apple-darwin** binary for `@electron-webauthn/native`
