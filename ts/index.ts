@@ -1,5 +1,6 @@
-import * as pkg from "../index";
+import { create, get } from "../index";
 
-export function sum() {
-  return pkg.sum(1, 2);
-}
+export const webauthn = {
+  create,
+  get,
+};
