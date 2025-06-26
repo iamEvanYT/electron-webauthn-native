@@ -7,14 +7,16 @@
   "cpu": [
     "x64"
   ],
-  "main": "pkg.linux-x64-musl.node",
+  "main": "electron-webauthn.linux-x64-musl.node",
   "files": [
-    "pkg.linux-x64-musl.node"
+    "electron-webauthn.linux-x64-musl.node"
   ],
+  "description": "Add support for WebAuthn in Electron.",
   "license": "MIT",
   "engines": {
     "node": ">= 10"
   },
+  "repository": "https://github.com/iamEvanYT/electron-webauthn.git",
   "libc": [
     "musl"
   ]

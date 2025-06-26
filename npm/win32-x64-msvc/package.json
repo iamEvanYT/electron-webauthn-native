@@ -7,12 +7,14 @@
   "cpu": [
     "x64"
   ],
-  "main": "pkg.win32-x64-msvc.node",
+  "main": "electron-webauthn.win32-x64-msvc.node",
   "files": [
-    "pkg.win32-x64-msvc.node"
+    "electron-webauthn.win32-x64-msvc.node"
   ],
+  "description": "Add support for WebAuthn in Electron.",
   "license": "MIT",
   "engines": {
     "node": ">= 10"
-  }
+  },
+  "repository": "https://github.com/iamEvanYT/electron-webauthn.git"
 }

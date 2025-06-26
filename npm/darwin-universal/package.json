@@ -4,12 +4,14 @@
   "os": [
     "darwin"
   ],
-  "main": "pkg.darwin-universal.node",
+  "main": "electron-webauthn.darwin-universal.node",
   "files": [
-    "pkg.darwin-universal.node"
+    "electron-webauthn.darwin-universal.node"
   ],
+  "description": "Add support for WebAuthn in Electron.",
   "license": "MIT",
   "engines": {
     "node": ">= 10"
-  }
+  },
+  "repository": "https://github.com/iamEvanYT/electron-webauthn.git"
 }

@@ -1,15 +1,15 @@
 {
-  "name": "@electron-webauthn/pkg-win32-ia32-msvc",
+  "name": "@electron-webauthn/pkg-freebsd-x64",
   "version": "0.0.0",
   "os": [
-    "win32"
+    "freebsd"
   ],
   "cpu": [
-    "ia32"
+    "x64"
   ],
-  "main": "electron-webauthn.win32-ia32-msvc.node",
+  "main": "electron-webauthn.freebsd-x64.node",
   "files": [
-    "electron-webauthn.win32-ia32-msvc.node"
+    "electron-webauthn.freebsd-x64.node"
   ],
   "description": "Add support for WebAuthn in Electron.",
   "license": "MIT",

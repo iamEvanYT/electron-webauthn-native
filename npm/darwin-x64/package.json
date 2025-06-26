@@ -7,12 +7,14 @@
   "cpu": [
     "x64"
   ],
-  "main": "pkg.darwin-x64.node",
+  "main": "electron-webauthn.darwin-x64.node",
   "files": [
-    "pkg.darwin-x64.node"
+    "electron-webauthn.darwin-x64.node"
   ],
+  "description": "Add support for WebAuthn in Electron.",
   "license": "MIT",
   "engines": {
     "node": ">= 10"
-  }
+  },
+  "repository": "https://github.com/iamEvanYT/electron-webauthn.git"
 }
