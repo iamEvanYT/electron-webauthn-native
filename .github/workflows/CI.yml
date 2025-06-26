@@ -109,10 +109,12 @@ jobs:
           NPM_TOKEN: ${{ secrets.NPM_TOKEN }}
       - name: Rename and publish under APP_NAME
         run: |
+          npm config set provenance false
           if git log -1 --pretty=%B | grep "^[0-9]\+\.[0-9]\+\.[0-9]\+";
           then
-            # Backup original package.json
+            # Backup original package.json and npm directory
             cp package.json package.json.backup
+            mv npm npm.backup
             
             # Get current package name and update to APP_NAME
             node -e "
@@ -122,7 +124,7 @@ jobs:
               fs.writeFileSync('package.json', JSON.stringify(pkg, null, 2));
             "
             
-            # Publish under the new name
+            # Publish under the new name (main package only, no subpackages)
             if git log -1 --pretty=%B | grep "^[0-9]\+\.[0-9]\+\.[0-9]\+$";
             then
               npm publish --access public
@@ -130,8 +132,9 @@ jobs:
               npm publish --tag next --access public
             fi
             
-            # Restore original package.json
+            # Restore original package.json and npm directory
             mv package.json.backup package.json
+            mv npm.backup npm
           else
             echo "Not a release, skipping renamed publish"
           fi
