@@ -1,6 +1,6 @@
 {
-  "name": "@electron-webauthn/pkg",
-  "version": "0.0.0",
+  "name": "electron-webauthn",
+  "version": "0.0.1",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
   "napi": {
@@ -24,6 +24,11 @@
     }
   },
   "license": "MIT",
+  "files": [
+    "dist",
+    "index.d.ts",
+    "index.js"
+  ],
   "devDependencies": {
     "@napi-rs/cli": "^2.18.4",
     "ava": "^6.0.1",
