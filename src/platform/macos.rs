@@ -58,19 +58,18 @@ pub fn create_credential_impl(options: PublicKeyCredentialCreationOptions) -> Re
         let provider: *mut Object = msg_send![provider, initWithRelyingPartyIdentifier: rp_id];
 
         // Create registration request
-        let request: *mut Object = msg_send![provider, createCredentialRegistrationRequest];
-
-        // Set challenge
         let challenge_data = NSData::with_bytes(&options.challenge);
-        let _: () = msg_send![request, setChallenge: challenge_data];
-
-        // Set user information
         let user_id_data = NSData::with_bytes(&options.user.id);
-        let _: () = msg_send![request, setUserID: user_id_data];
-
         let user_name = NSString::from_str(&options.user.name);
-        let _: () = msg_send![request, setName: user_name];
+        
+        // Use the correct method signature with parameters
+        let request: *mut Object = msg_send![provider, 
+            createCredentialRegistrationRequestWithChallenge: challenge_data
+            name: user_name
+            userID: user_id_data
+        ];
 
+        // Set display name
         let user_display_name = NSString::from_str(&options.user.display_name);
         let _: () = msg_send![request, setDisplayName: user_display_name];
 
@@ -82,7 +81,7 @@ pub fn create_credential_impl(options: PublicKeyCredentialCreationOptions) -> Re
                     "discouraged" => NSString::from_str("discouraged"),
                     _ => NSString::from_str("preferred"),
                 };
-                let _: () = msg_send![request, setUserVerificationRequirement: requirement];
+                let _: () = msg_send![request, setUserVerificationPreference: requirement];
             }
         }
 
@@ -112,19 +111,17 @@ pub fn get_credential_impl(options: PublicKeyCredentialRequestOptions) -> Result
         let provider: *mut Object = msg_send![provider_class, alloc];
         let provider: *mut Object = msg_send![provider, initWithRelyingPartyIdentifier: rp_id];
 
-        // Create assertion request
-        let request: *mut Object = msg_send![provider, createCredentialAssertionRequest];
-
-        // Set challenge
+        // Create assertion request with challenge
         let challenge_data = NSData::with_bytes(&options.challenge);
-        let _: () = msg_send![request, setChallenge: challenge_data];
+        let request: *mut Object = msg_send![provider, 
+            createCredentialAssertionRequestWithChallenge: challenge_data
+        ];
 
-        // Set allowed credentials if provided (simplified for demo)
+        // Set allowed credentials if provided
         if let Some(_allow_credentials) = &options.allow_credentials {
-            // For the demo implementation, we'll skip setting allowed credentials
+            // For now, skip setting allowed credentials to avoid complexity
             // In a real implementation, you'd convert each credential ID to NSData and create an NSArray
-            // let credential_ids_array = NSArray::from_vec(credential_nsdata_objects);
-            // let _: () = msg_send![request, setAllowedCredentials: credential_ids_array];
+            // TODO: Implement proper credential array handling
         }
 
         // Set user verification requirement
@@ -134,7 +131,7 @@ pub fn get_credential_impl(options: PublicKeyCredentialRequestOptions) -> Result
                 "discouraged" => NSString::from_str("discouraged"),
                 _ => NSString::from_str("preferred"),
             };
-            let _: () = msg_send![request, setUserVerificationRequirement: requirement];
+            let _: () = msg_send![request, setUserVerificationPreference: requirement];
         }
 
         // Create and perform authorization
