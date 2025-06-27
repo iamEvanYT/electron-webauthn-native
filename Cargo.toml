@@ -20,6 +20,8 @@ objc-foundation = "0.1"
 core-foundation = "0.10"
 block = "0.1"
 base64 = "0.22"
+anyhow = "1.0"
+tokio = { version = "1", features = ["macros", "rt-multi-thread"] }
 
 [build-dependencies]
 napi-build = "2.0.1"
