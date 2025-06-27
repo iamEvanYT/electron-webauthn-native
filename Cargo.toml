@@ -19,6 +19,7 @@ objc = "0.2"
 objc-foundation = "0.1"
 core-foundation = "0.10"
 block = "0.1"
+base64 = "0.22"
 
 [build-dependencies]
 napi-build = "2.0.1"
