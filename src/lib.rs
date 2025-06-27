@@ -1,18 +1,27 @@
 #![deny(clippy::all)]
 
-#[macro_use]
-extern crate napi_derive;
-
 mod platform;
 
 use napi::bindgen_prelude::*;
 use napi::Result;
+use std::collections::HashMap;
+
+use napi_derive::napi;
 
 // WebAuthn data structures
 #[napi(object)]
 pub struct AuthenticationExtensionsPRFInputs {
-    // This can be extended with specific PRF inputs as needed
-    // For now, keeping it as a generic object for future extension
+    #[napi(ts_type = "AuthenticationExtensionsPRFValues | undefined")]
+    pub eval: Option<AuthenticationExtensionsPRFValues>,
+    #[napi(ts_type = "Record<string, AuthenticationExtensionsPRFValues> | undefined")]
+    pub eval_by_credential: Option<HashMap<String, AuthenticationExtensionsPRFValues>>,
+}
+
+#[napi(object)]
+pub struct AuthenticationExtensionsPRFValues {
+    pub first: Buffer,
+    #[napi(ts_type = "Buffer | undefined")]
+    pub second: Option<Buffer>,
 }
 
 #[napi(object)]
