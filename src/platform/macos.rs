@@ -1,19 +1,18 @@
 use napi::bindgen_prelude::Buffer;
+use napi::{Error, Result, Status};
 
 #[cfg(target_os = "macos")]
 use {
-    std::{slice},
+    std::{slice, ptr, ffi::c_void},
     tokio::sync::oneshot,
-    anyhow::{anyhow, Result},
     objc::{
         class, declare::ClassDecl, msg_send, sel, sel_impl,
         runtime::{Object, Protocol, Sel},
     },
     objc_foundation::{
-        INSArray, INSString, NSArray, NSData, NSString,
+        INSString, NSString,
     },
     base64::engine::{general_purpose::STANDARD as B64, Engine},
-    napi::{Error, Status},
 };
 use crate::{
     PublicKeyCredentialCreationOptions,
@@ -29,10 +28,15 @@ pub async fn get_credential_impl(
     let rp_id = opts
         .rp_id
         .as_deref()
-        .ok_or_else(|| anyhow!("`rp_id` is required on macOS"))?;
+        .ok_or_else(|| Error::new(Status::InvalidArg, "`rp_id` is required on macOS"))?;
     let rp_id_ns = NSString::from_str(rp_id);
 
-    let challenge_ns = unsafe { NSData::from_bytes(&opts.challenge) };
+    // Create NSData from bytes using msg_send
+    let challenge_ns = unsafe {
+        let data_cls = class!(NSData);
+        let data: *mut Object = msg_send![data_cls, dataWithBytes:opts.challenge.as_ptr() length:opts.challenge.len()];
+        data
+    };
 
     // Provider & request ----------------------------------------------------------------------
     let provider: *mut Object = unsafe {
@@ -48,16 +52,23 @@ pub async fn get_credential_impl(
 
     // Allowed credentials ---------------------------------------------------------------------
     if let Some(list) = &opts.allow_credentials {
-        let mut objc_descs: Vec<*mut Object> = Vec::with_capacity(list.len());
+        // Create NSMutableArray directly using msg_send
+        let arr_cls = class!(NSMutableArray);
+        let nsarray: *mut Object = unsafe { msg_send![arr_cls, array] };
+        
         for cred in list {
-            let data = unsafe { NSData::from_bytes(&cred.id) };
+            let data = unsafe {
+                let data_cls = class!(NSData);
+                let data: *mut Object = msg_send![data_cls, dataWithBytes:cred.id.as_ptr() length:cred.id.len()];
+                data
+            };
             let desc_cls = class!(ASAuthorizationPublicKeyCredentialDescriptor);
             let desc: *mut Object = unsafe { msg_send![desc_cls, alloc] };
             let desc: *mut Object =
-                unsafe { msg_send![desc, initWithCredentialID:data transports:nil] };
-            objc_descs.push(desc);
+                unsafe { msg_send![desc, initWithCredentialID:data transports:ptr::null_mut::<Object>()] };
+            unsafe { let _: () = msg_send![nsarray, addObject: desc]; }
         }
-        let nsarray = NSArray::from_vec(objc_descs);
+        
         unsafe { let _: () = msg_send![request, setAllowedCredentials: nsarray]; }
     }
 
@@ -69,13 +80,13 @@ pub async fn get_credential_impl(
     // ASAuthorizationControllerDelegate callbacks into the Rust `oneshot::Sender`.
     // -----------------------------------------------------------------------------------------
     unsafe {
-        static mut DELEGATE_ONCE: std::sync::Once = std::sync::Once::new();
+        static DELEGATE_ONCE: std::sync::Once = std::sync::Once::new();
         DELEGATE_ONCE.call_once(|| {
             let superclass = class!(NSObject);
             let mut decl = ClassDecl::new("RustPasskeyDelegate", superclass).unwrap();
 
             // Store the Sender pointer inside the delegate instance
-            decl.add_ivar::<*mut oneshot::Sender<Result<PublicKeyCredential>>>("tx");
+            decl.add_ivar::<*mut c_void>("tx");
 
             extern "C" fn did_complete(
                 this: &mut Object,
@@ -104,10 +115,12 @@ pub async fn get_credential_impl(
                     };
 
                     // Send to waiting future -------------------------------------------------
-                    let tx_ptr: *mut oneshot::Sender<Result<PublicKeyCredential>> =
-                        *this.get_ivar("tx");
-                    if let Some(tx) = tx_ptr.as_mut() {
+                    let tx_ptr: *mut c_void = *this.get_ivar("tx");
+                    if !tx_ptr.is_null() {
+                        let tx = Box::from_raw(tx_ptr as *mut oneshot::Sender<Result<PublicKeyCredential>>);
                         let _ = tx.send(Ok(result));
+                        // Clear the ivar to prevent double-free
+                        (*this).set_ivar("tx", ptr::null_mut::<c_void>());
                     }
                 }
             }
@@ -121,13 +134,23 @@ pub async fn get_credential_impl(
                 unsafe {
                     let code: i64 = msg_send![error, code];
                     let desc_ns: *mut Object = msg_send![error, localizedDescription];
-                    let desc = NSString::from_ptr(desc_ns).as_str().to_owned();
+                    // Get string from NSString
+                    let desc_ptr: *const i8 = msg_send![desc_ns, UTF8String];
+                    let desc = if desc_ptr.is_null() {
+                        "Unknown error".to_string()
+                    } else {
+                        std::ffi::CStr::from_ptr(desc_ptr).to_string_lossy().to_string()
+                    };
 
-                    let tx_ptr: *mut oneshot::Sender<Result<PublicKeyCredential>> =
-                        *this.get_ivar("tx");
-                    if let Some(tx) = tx_ptr.as_mut() {
-                        let _ =
-                            tx.send(Err(anyhow!("ASAuthorization error {}: {}", code, desc)));
+                    let tx_ptr: *mut c_void = *this.get_ivar("tx");
+                    if !tx_ptr.is_null() {
+                        let tx = Box::from_raw(tx_ptr as *mut oneshot::Sender<Result<PublicKeyCredential>>);
+                        let _ = tx.send(Err(Error::new(
+                            Status::GenericFailure,
+                            format!("ASAuthorization error {}: {}", code, desc)
+                        )));
+                        // Clear the ivar to prevent double-free
+                        (*this).set_ivar("tx", ptr::null_mut::<c_void>());
                     }
                 }
             }
@@ -151,10 +174,13 @@ pub async fn get_credential_impl(
         let delegate_cls = class!(RustPasskeyDelegate);
         let delegate: *mut Object = msg_send![delegate_cls, alloc];
         let delegate: *mut Object = msg_send![delegate, init];
-        (*delegate).set_ivar("tx", Box::into_raw(Box::new(tx)));
+        (*delegate).set_ivar("tx", Box::into_raw(Box::new(tx)) as *mut c_void);
 
         // Build controller --------------------------------------------------------------------
-        let requests = NSArray::from_vec(vec![request]);
+        let arr_cls = class!(NSMutableArray);
+        let requests: *mut Object = msg_send![arr_cls, array];
+        let _: () = msg_send![requests, addObject: request];
+        
         let controller_cls = class!(ASAuthorizationController);
         let controller: *mut Object = msg_send![controller_cls, alloc];
         let controller: *mut Object =
@@ -166,7 +192,10 @@ pub async fn get_credential_impl(
     }
 
     // Convert the delegate callback into an async `Result`.
-    rx.await.map_err(|_| anyhow!("credential flow cancelled or failed"))
+    match rx.await {
+        Ok(result) => result,
+        Err(_) => Err(Error::new(Status::GenericFailure, "credential flow cancelled or failed"))
+    }
 }
 
 pub async fn create_credential_impl(_options: PublicKeyCredentialCreationOptions) -> Result<PublicKeyCredential> {
@@ -178,4 +207,4 @@ pub async fn create_credential_impl(_options: PublicKeyCredentialCreationOptions
 
 pub async fn is_supported_impl() -> Result<bool> {
     Ok(true)
-}
+} 

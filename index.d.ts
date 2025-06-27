@@ -11,8 +11,10 @@ export interface AuthenticationExtensionsPrfValues {
   first: Buffer
   second?: Buffer | undefined
 }
-export interface AuthenticationExtensionsPrfOutputs {
-  results?: AuthenticationExtensionsPRFValues | undefined
+export interface PublicKeyCredentialDescriptor {
+  id: Buffer
+  transports?: Array<string> | undefined
+  type: string
 }
 export interface AuthenticationExtensionsClientInputs {
   appid?: string | undefined
@@ -21,24 +23,9 @@ export interface AuthenticationExtensionsClientInputs {
   minPinLength?: boolean | undefined
   prf?: AuthenticationExtensionsPRFInputs | undefined
 }
-export interface AuthenticationExtensionsClientOutputs {
-  appid?: boolean | undefined
-  credProps?: CredentialPropertiesOutput | undefined
-  hmacCreateSecret?: boolean | undefined
-  minPinLength?: number | undefined
-  prf?: AuthenticationExtensionsPRFOutputs | undefined
-}
-export interface CredentialPropertiesOutput {
-  rk?: boolean | undefined
-}
-export interface PublicKeyCredentialDescriptor {
-  id: Buffer
-  transports?: Array<"ble" | "hybrid" | "internal" | "nfc" | "smart-card" | "usb"> | undefined
-  type: "public-key"
-}
 export interface PublicKeyCredentialParameters {
   alg: number
-  type: "public-key"
+  type: string
 }
 export interface PublicKeyCredentialEntity {
   name: string
@@ -53,9 +40,9 @@ export interface PublicKeyCredentialUserEntity {
   name: string
 }
 export interface AuthenticatorSelectionCriteria {
-  authenticatorAttachment?: "cross-platform" | "platform" | undefined
+  authenticatorAttachment?: string | undefined
   requireResidentKey?: boolean | undefined
-  residentKey?: "discouraged" | "preferred" | "required" | undefined
+  residentKey?: string | undefined
   userVerification?: "discouraged" | "preferred" | "required" | undefined
 }
 export interface PublicKeyCredentialCreationOptions {
@@ -77,39 +64,15 @@ export interface PublicKeyCredentialRequestOptions {
   timeout?: number | undefined
   userVerification?: "discouraged" | "preferred" | "required" | undefined
 }
-export interface AuthenticatorAttestationResponse {
-  clientDataJson: Buffer
-  attestationObject: Buffer
-  transports?: Array<string> | undefined
-  authenticatorData?: Buffer | undefined
-  publicKey?: Buffer | undefined
-  publicKeyAlgorithm: number
-}
-export interface AuthenticatorAssertionResponse {
-  clientDataJson: Buffer
-  authenticatorData: Buffer
-  signature: Buffer
-  userHandle?: Buffer | undefined
-}
 export interface PublicKeyCredential {
   id: string
   rawId: Buffer
-  response: AuthenticatorResponse
-  authenticatorAttachment?: "cross-platform" | "platform" | undefined
-  type: "public-key"
-  clientExtensionResults?: AuthenticationExtensionsClientOutputs | undefined
-}
-export interface AuthenticatorResponse {
-  attestation?: AuthenticatorAttestationResponse | undefined
-  assertion?: AuthenticatorAssertionResponse | undefined
+  response: Buffer
+  authenticatorAttachment?: string | undefined
+  type: string
 }
 /** Create a new WebAuthn credential */
 export declare function create(options: PublicKeyCredentialCreationOptions): Promise<PublicKeyCredential>
 /** Get/authenticate with an existing WebAuthn credential */
 export declare function get(options: PublicKeyCredentialRequestOptions): Promise<PublicKeyCredential>
-/** Check if WebAuthn is supported on this platform */
 export declare function isSupported(): Promise<boolean>
-/** Check if a specific authenticator attachment is available */
-export declare function isPlatformAuthenticatorAvailable(): Promise<boolean>
-/** Get available transports for this platform */
-export declare function getAvailableTransports(): Promise<Array<string>>

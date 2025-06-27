@@ -310,10 +310,8 @@ if (!nativeBinding) {
   throw new Error(`Failed to load native binding`)
 }
 
-const { create, get, isSupported, isPlatformAuthenticatorAvailable, getAvailableTransports } = nativeBinding
+const { create, get, isSupported } = nativeBinding
 
 module.exports.create = create
 module.exports.get = get
 module.exports.isSupported = isSupported
-module.exports.isPlatformAuthenticatorAvailable = isPlatformAuthenticatorAvailable
-module.exports.getAvailableTransports = getAvailableTransports
