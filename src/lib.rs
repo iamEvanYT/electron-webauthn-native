@@ -10,6 +10,47 @@ use napi::Result;
 
 // WebAuthn data structures
 #[napi(object)]
+pub struct AuthenticationExtensionsPRFInputs {
+    // This can be extended with specific PRF inputs as needed
+    // For now, keeping it as a generic object for future extension
+}
+
+#[napi(object)]
+pub struct PublicKeyCredentialDescriptor {
+    pub id: Buffer,
+    #[napi(ts_type = "Array<string> | undefined")]
+    pub transports: Option<Vec<String>>,
+    #[napi(js_name = "type")]
+    pub type_: String,
+}
+
+#[napi(object)]
+pub struct AuthenticationExtensionsClientInputs {
+    #[napi(ts_type = "string | undefined")]
+    pub appid: Option<String>,
+    #[napi(ts_type = "boolean | undefined")]
+    pub cred_props: Option<bool>,
+    #[napi(ts_type = "boolean | undefined")]
+    pub hmac_create_secret: Option<bool>,
+    #[napi(ts_type = "boolean | undefined")]
+    pub min_pin_length: Option<bool>,
+    #[napi(ts_type = "AuthenticationExtensionsPRFInputs | undefined")]
+    pub prf: Option<AuthenticationExtensionsPRFInputs>,
+}
+
+#[napi(object)]
+pub struct PublicKeyCredentialParameters {
+    pub alg: i32,
+    #[napi(js_name = "type")]
+    pub type_: String,
+}
+
+#[napi(object)]
+pub struct PublicKeyCredentialEntity {
+    pub name: String,
+}
+
+#[napi(object)]
 pub struct PublicKeyCredentialRpEntity {
     #[napi(ts_type = "string | undefined")]
     pub id: Option<String>,
@@ -18,16 +59,9 @@ pub struct PublicKeyCredentialRpEntity {
 
 #[napi(object)]
 pub struct PublicKeyCredentialUserEntity {
+    pub display_name: String,
     pub id: Buffer,
     pub name: String,
-    pub display_name: String,
-}
-
-#[napi(object)]
-pub struct PublicKeyCredentialParameters {
-    #[napi(js_name = "type")]
-    pub type_: String,
-    pub alg: i32,
 }
 
 #[napi(object)]
@@ -38,69 +72,49 @@ pub struct AuthenticatorSelectionCriteria {
     pub require_resident_key: Option<bool>,
     #[napi(ts_type = "string | undefined")]
     pub resident_key: Option<String>,
-    #[napi(ts_type = "string | undefined")]
+    #[napi(ts_type = "\"discouraged\" | \"preferred\" | \"required\" | undefined")]
     pub user_verification: Option<String>,
-}
-
-#[napi(object)]
-pub struct PublicKeyCredentialDescriptor {
-    #[napi(js_name = "type")]
-    pub type_: String,
-    pub id: Buffer,
-    #[napi(ts_type = "Array<string> | undefined")]
-    pub transports: Option<Vec<String>>,
 }
 
 #[napi(object)]
 pub struct PublicKeyCredentialCreationOptions {
-    pub rp: PublicKeyCredentialRpEntity,
-    pub user: PublicKeyCredentialUserEntity,
-    pub challenge: Buffer,
-    pub pub_key_cred_params: Vec<PublicKeyCredentialParameters>,
-    #[napi(ts_type = "number | undefined")]
-    pub timeout: Option<i32>,
-    #[napi(ts_type = "Array<PublicKeyCredentialDescriptor> | undefined")]
-    pub exclude_credentials: Option<Vec<PublicKeyCredentialDescriptor>>,
+    #[napi(ts_type = "\"direct\" | \"enterprise\" | \"indirect\" | \"none\" | undefined")]
+    pub attestation: Option<String>,
     #[napi(ts_type = "AuthenticatorSelectionCriteria | undefined")]
     pub authenticator_selection: Option<AuthenticatorSelectionCriteria>,
-    #[napi(ts_type = "string | undefined")]
-    pub attestation: Option<String>,
+    pub challenge: Buffer,
+    #[napi(ts_type = "Array<PublicKeyCredentialDescriptor> | undefined")]
+    pub exclude_credentials: Option<Vec<PublicKeyCredentialDescriptor>>,
+    #[napi(ts_type = "AuthenticationExtensionsClientInputs | undefined")]
+    pub extensions: Option<AuthenticationExtensionsClientInputs>,
+    pub pub_key_cred_params: Vec<PublicKeyCredentialParameters>,
+    pub rp: PublicKeyCredentialRpEntity,
+    #[napi(ts_type = "number | undefined")]
+    pub timeout: Option<i32>,
+    pub user: PublicKeyCredentialUserEntity,
 }
 
 #[napi(object)]
 pub struct PublicKeyCredentialRequestOptions {
-    pub challenge: Buffer,
-    #[napi(ts_type = "number | undefined")]
-    pub timeout: Option<i32>,
-    #[napi(ts_type = "string | undefined")]
-    pub rp_id: Option<String>,
     #[napi(ts_type = "Array<PublicKeyCredentialDescriptor> | undefined")]
     pub allow_credentials: Option<Vec<PublicKeyCredentialDescriptor>>,
+    pub challenge: Buffer,
+    #[napi(ts_type = "AuthenticationExtensionsClientInputs | undefined")]
+    pub extensions: Option<AuthenticationExtensionsClientInputs>,
     #[napi(ts_type = "string | undefined")]
+    pub rp_id: Option<String>,
+    #[napi(ts_type = "number | undefined")]
+    pub timeout: Option<i32>,
+    #[napi(ts_type = "\"discouraged\" | \"preferred\" | \"required\" | undefined")]
     pub user_verification: Option<String>,
-}
-
-#[napi(object)]
-pub struct AuthenticatorAttestationResponse {
-    pub client_data_json: Buffer,
-    pub attestation_object: Buffer,
-    pub transports: Vec<String>,
-}
-
-#[napi(object)]
-pub struct AuthenticatorAssertionResponse {
-    pub client_data_json: Buffer,
-    pub authenticator_data: Buffer,
-    pub signature: Buffer,
-    #[napi(ts_type = "Buffer | undefined")]
-    pub user_handle: Option<Buffer>,
 }
 
 #[napi(object)]
 pub struct PublicKeyCredential {
     pub id: String,
     pub raw_id: Buffer,
-    pub response: Either<AuthenticatorAttestationResponse, AuthenticatorAssertionResponse>,
+    // Simplified response - can be extended based on needs
+    pub response: Buffer,
     #[napi(ts_type = "string | undefined")]
     pub authenticator_attachment: Option<String>,
     #[napi(js_name = "type")]
@@ -109,12 +123,17 @@ pub struct PublicKeyCredential {
 
 /// Create a new WebAuthn credential
 #[napi]
-pub fn create(options: PublicKeyCredentialCreationOptions) -> Result<PublicKeyCredential> {
-    platform::create_credential(options)
+pub async fn create(options: PublicKeyCredentialCreationOptions) -> Result<PublicKeyCredential> {
+    platform::create_credential(options).await
 }
 
 /// Get/authenticate with an existing WebAuthn credential
 #[napi]
-pub fn get(options: PublicKeyCredentialRequestOptions) -> Result<PublicKeyCredential> {
-    platform::get_credential(options)
+pub async fn get(options: PublicKeyCredentialRequestOptions) -> Result<PublicKeyCredential> {
+    platform::get_credential(options).await
+}
+
+#[napi]
+pub async fn is_supported() -> Result<bool> {
+    platform::is_supported().await
 }

@@ -1,20 +1,24 @@
-use napi::{Result, Error, Status};
-use napi::bindgen_prelude::*;
+use napi::{Error, Result, Status};
 use crate::{
-    PublicKeyCredentialCreationOptions, PublicKeyCredentialRequestOptions, 
+    PublicKeyCredentialCreationOptions,
+    PublicKeyCredentialRequestOptions, 
     PublicKeyCredential
 };
 
-pub fn create_credential_impl(_options: PublicKeyCredentialCreationOptions) -> Result<PublicKeyCredential> {
+pub async fn create_credential_impl(_options: PublicKeyCredentialCreationOptions) -> Result<PublicKeyCredential> {
     Err(Error::new(
         Status::GenericFailure,
         "WebAuthn is not supported on this platform"
     ))
 }
 
-pub fn get_credential_impl(_options: PublicKeyCredentialRequestOptions) -> Result<PublicKeyCredential> {
+pub async fn get_credential_impl(_options: PublicKeyCredentialRequestOptions) -> Result<PublicKeyCredential> {
     Err(Error::new(
         Status::GenericFailure,
         "WebAuthn is not supported on this platform"
     ))
 } 
+
+pub async fn is_supported_impl() -> Result<bool> {
+    Ok(false)
+}
