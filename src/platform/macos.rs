@@ -155,6 +155,33 @@ pub async fn get_credential_impl(
                 }
             }
 
+            extern "C" fn presentation_anchor(
+                _this: &mut Object,
+                _: Sel,
+                _: *mut Object, /* controller */
+            ) -> *mut Object {
+                unsafe {
+                    // Get the shared NSApplication instance
+                    let app_cls = class!(NSApplication);
+                    let app: *mut Object = msg_send![app_cls, sharedApplication];
+                    
+                    // Get the key window (front-most window)
+                    let key_window: *mut Object = msg_send![app, keyWindow];
+                    
+                    // If no key window, try to get the first window from the windows array
+                    if key_window.is_null() {
+                        let windows: *mut Object = msg_send![app, windows];
+                        let count: usize = msg_send![windows, count];
+                        if count > 0 {
+                            let window: *mut Object = msg_send![windows, objectAtIndex:0];
+                            return window;
+                        }
+                    }
+                    
+                    key_window
+                }
+            }
+
             decl.add_method(
                 sel!(authorizationController:didCompleteWithAuthorization:),
                 did_complete as extern "C" fn(&mut Object, Sel, *mut Object, *mut Object),
@@ -163,9 +190,14 @@ pub async fn get_credential_impl(
                 sel!(authorizationController:didCompleteWithError:),
                 did_error as extern "C" fn(&mut Object, Sel, *mut Object, *mut Object),
             );
+            decl.add_method(
+                sel!(presentationAnchorForAuthorizationController:),
+                presentation_anchor as extern "C" fn(&mut Object, Sel, *mut Object) -> *mut Object,
+            );
 
-            // Adopt the official protocol
+            // Adopt the official protocols
             decl.add_protocol(&Protocol::get("ASAuthorizationControllerDelegate").unwrap());
+            decl.add_protocol(&Protocol::get("ASAuthorizationControllerPresentationContextProviding").unwrap());
 
             decl.register();
         });
@@ -186,6 +218,9 @@ pub async fn get_credential_impl(
         let controller: *mut Object =
             msg_send![controller, initWithAuthorizationRequests: requests];
         let _: () = msg_send![controller, setDelegate: delegate];
+        
+        // Set the presentation context provider to the delegate
+        let _: () = msg_send![controller, setPresentationContextProvider: delegate];
 
         // Kick off the authorization flow (UI will appear) ------------------------------------
         let _: () = msg_send![controller, performRequests];
